@@ -1,0 +1,109 @@
+<html>
+    <head>
+        <title>Rarrar (videojuego)</title>
+    </head>
+    <style>
+        .scene {
+            background-color: green;
+            position: absolute;
+            width: 800px;
+            height: 800px;
+        }
+        .microm {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            color: white;
+            line-height: 40px;
+            line-height: 40px;
+            background: url('./img/micro.png');
+            transition: all 0.2s linear;
+        }
+        .ball {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            color: white;
+            line-height: 40px;
+            line-height: 40px;
+            background: url('./img/pelota.png');
+            transition: all 0.2s linear;
+        }
+    </style>
+    <body>
+        <div>Score: <span id="score"></span></div>
+        <div class="scene">
+            <div id="microm" class="microm"></div>
+            <div id="ball" class="ball"></div>
+        </div>
+        <script>
+
+            let microm = document.getElementById('microm');
+            let ball = document.getElementById('ball');
+            let scoreLabel = document.getElementById('score');
+
+            let a = 40;
+
+            let score = 0;
+            let max_x = 19;
+            let max_y = 19;
+            let pos_x = 0;
+            let pos_y = 0;
+            let ball_pos_x = 10;
+            let ball_pos_y = 5;
+
+            function refresh() {
+                // update microm position
+                microm.style.left = (a*pos_x)+'px';
+                microm.style.top = (a*pos_y)+'px';
+                // update ball position
+                ball.style.left = (a*ball_pos_x)+'px';
+                ball.style.top = (a*ball_pos_y)+'px';
+                // Update score
+                scoreLabel.innerText = score;
+            }
+
+            function randomBall() {
+                ball_pos_x = Math.floor(Math.random()*(max_x+1));
+                ball_pos_y = Math.floor(Math.random()*(max_y+1));
+            }
+
+            refresh();
+
+            document.addEventListener('keyup', function(e) {
+
+                console.log(e.code);
+
+                switch (e.code) {
+                    case 'ArrowRight':
+                        if (pos_x >= max_x) break; 
+                        pos_x++;
+                        break;
+                    case 'ArrowLeft':
+                        if (pos_x <= 0) break;
+                        pos_x--;
+                        break;
+                    case 'ArrowDown':
+                        if (pos_y >= max_y) break;
+                        pos_y++;
+                        break;
+                    case 'ArrowUp':
+                        if (pos_y <= 0) break;
+                        pos_y--;
+                        break;
+                }
+
+                refresh();
+
+                if (pos_x == ball_pos_x && pos_y == ball_pos_y) {
+                    //alert("CHAN!!!")
+                    score++;
+                    randomBall();
+                    refresh();
+                }
+
+            }, true);
+
+        </script>
+    </body>
+</html>
