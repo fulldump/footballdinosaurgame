@@ -31,36 +31,71 @@
         }
     </style>
     <body>
-        <div>Score: <span id="score"></span></div>
-        <div class="scene">
-            <div id="microm" class="microm"></div>
-            <div id="ball" class="ball"></div>
-        </div>
+				<div style="width: 800px;">
+					<div style="overflow: hidden;">
+						<div
+										style="float: right;"
+						>Pablo: <span id="score"></span></div>
+						<div
+										style="float: left;"
+						>Sara: <span id="score2"></span></div>
+					</div>
+					<div class="scene">
+						<div id="microm" class="microm" style="background-color: dodgerblue;"></div>
+						<div id="microm2" class="microm" style="background-color: orange;"></div>
+						<div id="ball" class="ball"></div>
+					</div>
+				</div>
         <script>
 
             let microm = document.getElementById('microm');
+            let microm2 = document.getElementById('microm2');
             let ball = document.getElementById('ball');
             let scoreLabel = document.getElementById('score');
+            let scoreLabel2 = document.getElementById('score2');
 
             let a = 40;
 
-            let score = 0;
+						function NewPosition() {
+							return {
+								x: 0,
+								y: 0,
+							}
+						}
+
+						function NewPlayer() {
+							return {
+								name: 'Player X',
+								color: 'transparent',
+								score: 0,
+								pos: NewPosition(),
+								dom: null,
+							};
+						}
+
+						let player1 = NewPlayer();
+						let player2 = NewPlayer();
+
             let max_x = 19;
             let max_y = 19;
-            let pos_x = 0;
-            let pos_y = 0;
             let ball_pos_x = 10;
             let ball_pos_y = 5;
 
+						player1.pos.x = max_x;
+
             function refresh() {
                 // update microm position
-                microm.style.left = (a*pos_x)+'px';
-                microm.style.top = (a*pos_y)+'px';
+                microm.style.left = (a*player1.pos.x)+'px';
+                microm.style.top = (a*player1.pos.y)+'px';
+                // update microm2 position
+                microm2.style.left = (a*player2.pos.x)+'px';
+                microm2.style.top = (a*player2.pos.y)+'px';
                 // update ball position
                 ball.style.left = (a*ball_pos_x)+'px';
                 ball.style.top = (a*ball_pos_y)+'px';
                 // Update score
-                scoreLabel.innerText = score;
+                scoreLabel.innerText = player1.score;
+                scoreLabel2.innerText = player2.score;
             }
 
             function randomBall() {
@@ -70,40 +105,154 @@
 
             refresh();
 
-            document.addEventListener('keyup', function(e) {
+						let player1KeysMap = {
+							right: 'ArrowRight',
+							left: 'ArrowLeft',
+							down: 'ArrowDown',
+							up: 'ArrowUp',
+						};
 
-                console.log(e.code);
+						let player2KeysMap = {
+							right: 'KeyD',
+							left: 'KeyA',
+							down: 'KeyS',
+							up: 'KeyW',
+						};
 
-                switch (e.code) {
-                    case 'ArrowRight':
-                        if (pos_x >= max_x) break; 
-                        pos_x++;
-                        break;
-                    case 'ArrowLeft':
-                        if (pos_x <= 0) break;
-                        pos_x--;
-                        break;
-                    case 'ArrowDown':
-                        if (pos_y >= max_y) break;
-                        pos_y++;
-                        break;
-                    case 'ArrowUp':
-                        if (pos_y <= 0) break;
-                        pos_y--;
-                        break;
-                }
+						function PlayerMove(player, action) {
+							switch (action) {
+								case 'right':
+									if (player.pos.x >= max_x) break;
+									player.pos.x++;
+									break;
+								case 'left':
+									if (player.pos.x <= 0) break;
+									player.pos.x--;
+									break;
+								case 'down':
+									if (player.pos.y >= max_y) break;
+									player.pos.y++;
+									break;
+								case 'up':
+									if (player.pos.y <= 0) break;
+									player.pos.y--;
+									break;
+							}
 
-                refresh();
+							refresh();
 
-                if (pos_x == ball_pos_x && pos_y == ball_pos_y) {
-                    //alert("CHAN!!!")
-                    score++;
-                    randomBall();
-                    refresh();
-                }
+							if (player.pos.x === ball_pos_x && player.pos.y === ball_pos_y) {
+								//alert("CHAN!!!")
+								player.score++;
+								randomBall();
+								refresh();
+							}
+						}
 
-            }, true);
+						function KeyboardHandler(player, movements) {
+							return function(e) {
+								console.log(e.code);
 
-        </script>
+								switch (e.code) {
+									case movements.right:
+										if (player.pos.x >= max_x) break;
+										player.pos.x++;
+										break;
+									case movements.left:
+										if (player.pos.x <= 0) break;
+										player.pos.x--;
+										break;
+									case movements.down:
+										if (player.pos.y >= max_y) break;
+										player.pos.y++;
+										break;
+									case movements.up:
+										if (player.pos.y <= 0) break;
+										player.pos.y--;
+										break;
+								}
+
+								refresh();
+
+								if (player.pos.x == ball_pos_x && player.pos.y == ball_pos_y) {
+									//alert("CHAN!!!")
+									player.score++;
+									randomBall();
+									refresh();
+								}
+							};
+						}
+
+						document.addEventListener('keyup', KeyboardHandler(player1, player1KeysMap), true);
+						document.addEventListener('keyup', KeyboardHandler(player2, player2KeysMap), true);
+
+						let gamepads = {};
+
+						window.addEventListener("gamepadconnected", (e) => {
+							console.log(
+											"Gamepad connected at index %d: %s. %d buttons, %d axes.",
+											e.gamepad.index,
+											e.gamepad.id,
+											e.gamepad.buttons.length,
+											e.gamepad.axes.length,
+							);
+							gamepads[e.gamepad.index] = {
+								gamepad: e.gamepad,
+								state: {},
+							};
+							console.log(gamepads);
+						});
+
+						function GamepadRead(gamepad, state, trigger, button) {
+							const newState = gamepad.buttons[button].pressed;
+							const oldState = state[button];
+							state[button] = newState;
+							if (trigger === 'release') {
+								return newState === false && oldState === true;
+							} else if (trigger === 'press') {
+								return newState === true && oldState === false;
+							} else {
+								return newState;
+							}
+						}
+
+						function NewGamepadReader() {
+							const gp = navigator.getGamepads();
+							return function(id, button, trigger) {
+								if (!gp[id]) return false;
+								if (!gamepads[id]) return false;
+								return GamepadRead(gp[id], gamepads[id].state, trigger, button);
+							}
+						}
+
+						function step(timestamp) {
+							const read = NewGamepadReader();
+
+							if (read(0, 14, 'press')) {
+								PlayerMove(player1, 'left');
+							} else if (read(0, 15, 'press')) {
+								PlayerMove(player1, 'right');
+							} else if (read(0, 12, 'press')) {
+								PlayerMove(player1, 'up');
+							} else if (read(0, 13, 'press')) {
+								PlayerMove(player1, 'down');
+							}
+
+							if (read(1, 14, 'press')) {
+								PlayerMove(player2, 'left');
+							} else if (read(1, 15, 'press')) {
+								PlayerMove(player2, 'right');
+							} else if (read(1, 12, 'press')) {
+								PlayerMove(player2, 'up');
+							} else if (read(1, 13, 'press')) {
+								PlayerMove(player2, 'down');
+							}
+
+							requestAnimationFrame(step)
+						}
+
+						requestAnimationFrame(step);
+
+				</script>
     </body>
 </html>
