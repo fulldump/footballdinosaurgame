@@ -19,6 +19,15 @@
             background: url('./img/micro.png');
             transition: all 0.2s linear;
         }
+        .dinosaur {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            color: white;
+            line-height: 40px;
+            background: url('./img/dinosaur.png');
+            transition: all 0.2s linear;
+        }
         .ball {
             position: absolute;
             width: 40px;
@@ -28,31 +37,76 @@
             line-height: 40px;
             background: url('./img/pelota.png');
             transition: all 0.2s linear;
+					  /*border-radius: 50%;*/
         }
+				#gameover {
+						display: none;
+						position: absolute;
+						font-size: 200px;
+						text-align: center;
+						font-family: system-ui;
+						margin-top: 134px;
+					  font-weight: bold;
+						color: greenyellow;
+						text-shadow: 0 0 32px black;
+				}
     </style>
     <body>
 				<div style="width: 800px;">
 					<div style="overflow: hidden;">
 						<div
 										style="float: right;"
-						>Pablo: <span id="score"></span></div>
+						>Pablo: <span id="score"></span> points, <span id="lives1"></span> lives</div>
 						<div
 										style="float: left;"
-						>Sara: <span id="score2"></span></div>
+						>Sara: <span id="score2"></span> points, <span id="lives2"></span> lives</div>
 					</div>
 					<div class="scene">
 						<div id="microm" class="microm" style="background-color: dodgerblue;"></div>
 						<div id="microm2" class="microm" style="background-color: orange;"></div>
+						<div id="dinosaur" class="dinosaur" style="background-color: transparent;"></div>
 						<div id="ball" class="ball"></div>
+						<div id="gameover">GAME OVER</div>
 					</div>
+
 				</div>
         <script>
+
+						let max_x = 19;
+						let max_y = 19;
+						let ball_pos_x = 10;
+						let ball_pos_y = 5;
+
+						function NewGame() {
+
+							let max_w = 10;
+							let max_h = 10;
+							let board = [];
+							for (let y = 0; y < max_h; y++) {
+								let row = [];
+								for (let x = 0; x < max_w; x++) {
+									row.push(null);
+								}
+								board.push(row);
+							}
+
+							let game = {
+								max_w,
+								max_h,
+								board,
+							};
+
+							return game;
+						}
+
 
             let microm = document.getElementById('microm');
             let microm2 = document.getElementById('microm2');
             let ball = document.getElementById('ball');
             let scoreLabel = document.getElementById('score');
             let scoreLabel2 = document.getElementById('score2');
+						let livesLabel1 = document.getElementById('lives1');
+						let livesLabel2 = document.getElementById('lives2');
 
             let a = 40;
 
@@ -63,23 +117,84 @@
 							}
 						}
 
-						function NewPlayer() {
+						function NewPlayer(name) {
 							return {
-								name: 'Player X',
+								name,
 								color: 'transparent',
 								score: 0,
 								pos: NewPosition(),
 								dom: null,
+								lives: 3,
 							};
 						}
 
-						let player1 = NewPlayer();
-						let player2 = NewPlayer();
+						let player1 = NewPlayer('Pablo');
+						let player2 = NewPlayer('Sara');
 
-            let max_x = 19;
-            let max_y = 19;
-            let ball_pos_x = 10;
-            let ball_pos_y = 5;
+						let players = [player1, player2];
+
+						function NewDinosaur(players) {
+							return {
+								players,
+								pos: NewPosition(),
+								dom: document.getElementById('dinosaur'),
+							}
+						}
+
+						let dinosaur = NewDinosaur(players);
+						randomItem(dinosaur);
+
+						setInterval(function () {
+
+							// Detect closer player
+							let closer = null;
+							let distance = 99999;
+							dinosaur.players.forEach(player => {
+								if (!player.lives) return;
+								let d = Math.abs(player.pos.x-dinosaur.pos.x)+Math.abs(player.pos.y-dinosaur.pos.y);
+								if (distance > d) {
+									distance = d;
+									closer = player;
+								}
+							});
+							if (closer == null) {
+								document.getElementById('gameover').style.display = 'block';
+							}
+							console.log("está más cerca:", closer.name);
+
+							if (Math.abs(closer.pos.x - dinosaur.pos.x) > Math.abs(closer.pos.y - dinosaur.pos.y)) {
+								console.log('x')
+								if (closer.pos.x - dinosaur.pos.x > 0) {
+									ItemMove(dinosaur, 'right');
+								} else {
+									ItemMove(dinosaur, 'left');
+								}
+							} else {
+								console.log('y')
+								if (closer.pos.y - dinosaur.pos.y > 0) {
+									ItemMove(dinosaur, 'down');
+								} else {
+									ItemMove(dinosaur, 'up');
+								}
+							}
+
+							dinosaur.players.forEach(player => {
+								if (!player.lives) return;
+								if (player.pos.x === dinosaur.pos.x && player.pos.y === dinosaur.pos.y) {
+									console.log('DINOSAURIO COME A', player.name);
+									player.lives--;
+									randomItem(player);
+								}
+							});
+
+							if (ball_pos_x === dinosaur.pos.x && ball_pos_y === dinosaur.pos.y) {
+								randomBall();
+							}
+
+							refresh();
+
+						}, 500);
+
 
 						player1.pos.x = max_x;
 
@@ -87,20 +202,37 @@
                 // update microm position
                 microm.style.left = (a*player1.pos.x)+'px';
                 microm.style.top = (a*player1.pos.y)+'px';
+								if (!player1.lives) {
+									microm.style.display = 'none';
+								}
                 // update microm2 position
                 microm2.style.left = (a*player2.pos.x)+'px';
                 microm2.style.top = (a*player2.pos.y)+'px';
-                // update ball position
+								if (!player2.lives) {
+									microm2.style.display = 'none';
+								}
+								// update ball position
                 ball.style.left = (a*ball_pos_x)+'px';
                 ball.style.top = (a*ball_pos_y)+'px';
                 // Update score
                 scoreLabel.innerText = player1.score;
                 scoreLabel2.innerText = player2.score;
-            }
+								// Update lives
+								livesLabel1.innerText = player1.lives;
+								livesLabel2.innerText = player2.lives;
+								// update dinosaur
+								dinosaur.dom.style.left = (a*dinosaur.pos.x)+'px';
+								dinosaur.dom.style.top = (a*dinosaur.pos.y)+'px';
+						}
 
             function randomBall() {
                 ball_pos_x = Math.floor(Math.random()*(max_x+1));
                 ball_pos_y = Math.floor(Math.random()*(max_y+1));
+            }
+
+            function randomItem(item) {
+                item.pos.x = Math.floor(Math.random()*(max_x+1));
+                item.pos.y = Math.floor(Math.random()*(max_y+1));
             }
 
             refresh();
@@ -120,32 +252,37 @@
 						};
 
 						function PlayerMove(player, action) {
-							switch (action) {
-								case 'right':
-									if (player.pos.x >= max_x) break;
-									player.pos.x++;
-									break;
-								case 'left':
-									if (player.pos.x <= 0) break;
-									player.pos.x--;
-									break;
-								case 'down':
-									if (player.pos.y >= max_y) break;
-									player.pos.y++;
-									break;
-								case 'up':
-									if (player.pos.y <= 0) break;
-									player.pos.y--;
-									break;
-							}
+							ItemMove(player, action);
 
 							refresh();
 
+							if (!player.lives) return;
 							if (player.pos.x === ball_pos_x && player.pos.y === ball_pos_y) {
 								//alert("CHAN!!!")
 								player.score++;
 								randomBall();
 								refresh();
+							}
+						}
+
+						function ItemMove(item, action) {
+							switch (action) {
+								case 'right':
+									if (item.pos.x >= max_x) break;
+									item.pos.x++;
+									break;
+								case 'left':
+									if (item.pos.x <= 0) break;
+									item.pos.x--;
+									break;
+								case 'down':
+									if (item.pos.y >= max_y) break;
+									item.pos.y++;
+									break;
+								case 'up':
+									if (item.pos.y <= 0) break;
+									item.pos.y--;
+									break;
 							}
 						}
 
